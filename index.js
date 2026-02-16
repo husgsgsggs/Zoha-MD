@@ -87,6 +87,10 @@ async function startBot() {
         if (!msg.message || msg.key.fromMe) return;
         const text = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
         const remoteJid = msg.key.remoteJid;
+        const from = remoteJid;
+        const body = text.trim();
+        const args = body.split(' ').slice(1);
+        const command = body.split(' ')[0].toLowerCase();
 
         if (text === '.menu') {
             const menu = `╭═══〔 🚀 *POWER BOT* 〕═══⊷\n║ \n║ 👤 *Creators:* ZOHA & HER HUSBAND\n║ 🛠 *Status:* High-Speed Active\n║ \n╠═══〔 *COMMANDS* 〕═══⊷\n║\n║ 📥 *.img <keyword>*\n║ ↳ _Fetches 50 Ultra HD images_\n ║ 🤖 *.ai <question>*\n
@@ -103,20 +107,17 @@ async function startBot() {
         
 
                 // COMMAND: .ai or .gemini
-        case '.ai': {
+        if (command === '.ai') {
   const prompt = args.join(' ');
   if (!prompt) return sock.sendMessage(from, { text: 'Ask something.' });
 
   await sock.sendMessage(from, { text: '🤖 Thinking...' });
 
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await aiModel.generateContent(prompt);
+    const reply = result.response.text();
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-
-    await sock.sendMessage(from, { text });
+    await sock.sendMessage(from, { text: reply });
 
   } catch (error) {
     console.error(error);
@@ -124,14 +125,13 @@ async function startBot() {
       text: '⚠️ AI failed. Check API key.'
     });
   }
-  break;
-}
+      }
             
         
 // ... (keep your existing express and startBot code)
 
         
-        case '.img': {
+        if (command === '.img') {
   const query = args.join(' ');
   if (!query) return sock.sendMessage(from, { text: 'Send search term.' });
 
@@ -148,7 +148,7 @@ async function startBot() {
 
     for (const img of images) {
       await sock.sendMessage(from, { image: { url: img } });
-      await new Promise(r => setTimeout(r, 700)); // anti-ban delay
+      await new Promise(r => setTimeout(r, 700));
     }
 
   } catch (err) {
@@ -157,8 +157,7 @@ async function startBot() {
       text: '⚠️ Image fetch failed.'
     });
   }
-  break;
-}
+        }
 
 
 
