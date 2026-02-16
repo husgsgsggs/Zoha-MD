@@ -325,28 +325,84 @@ async function startBot() {
   await sock.sendMessage(from,{image:fs.readFileSync(file)});
       }
         if (command === ".help") {
-  return sock.sendMessage(from,{
-    text:`👑 BOT HELP
+  const help = `╭═══〔 📜 *POWER BOT HELP* 〕═══⊷
+║
+╠═══〔 🎯 WORD CHAIN (WC) 〕═══⊷
+║ ✅ *Commands*
+║ 🎯 *.wc start <easy|medium|hard|insane>*
+║ ↳ Create game (default: easy)
+║ 🎯 *.wc join*
+║ ↳ Join players list
+║ 🎯 *.wc begin*
+║ ↳ Host starts game + timer begins
+║ 🎯 *.wc word <word>*
+║ ↳ Play your word on your turn
+║ 🎯 *.wc status*
+║ ↳ Show players, turn, last word
+║ 🎯 *.wc end*
+║ ↳ Host ends game
+║
+║ 📌 *Rules*
+║ • Turn-based game in group/DM
+║ • First word can be anything (valid word)
+║ • Next word must start with the *last letter* of previous word
+║ • *No repeats* (same word cannot be used again)
+║ • If you send wrong starting letter → rejected
+║ • If you exceed time limit → eliminated ❌
+║ • Last remaining player wins 🏆
+║
+║ ⏱ *Levels & Time*
+║ • easy:   min 3 letters | 20s per turn
+║ • medium: min 4 letters | 15s per turn
+║ • hard:   min 5 letters | 12s per turn
+║ • insane: min 6 letters | 10s per turn
+║
+╠═══〔 🎲 LUDO (FULL) 〕═══⊷
+║ ✅ *Commands*
+║ 🎲 *.ludo start*
+║ ↳ Create a ludo game
+║ 🎲 *.ludo join*
+║ ↳ Join game (max 4 players)
+║ 🎲 *.ludo roll*
+║ ↳ Roll dice (only current player)
+║ 🎲 *.ludo move <1-4>*
+║ ↳ Move token number
+║ 🖼 *.ludo board*
+║ ↳ Show board image/status
+║ 🎲 *.ludo status*
+║ ↳ Show token positions
+║ 🎲 *.ludo end*
+║ ↳ End game
+║
+║ 📌 *Rules*
+║ • Each player has *4 tokens*
+║ • Need *6* to bring a token out of home
+║ • Rolling *6 = extra turn*
+║ • Landing on enemy token *captures* it → sends it back home
+║ • *Safe cells* cannot be captured
+║ • Winner is first to get *all 4 tokens* to finish 🏆
+║ ⭐ *Special Rule:* You MUST capture at least *one* enemy token
+║   before any of your tokens can finish (enter final home).
+║
+╠═══〔 ⚙️ SYSTEM 〕═══⊷
+║ ❤️ *.alive*  ↳ Bot status
+║ 🏓 *.ping*   ↳ Speed test
+║ 🔥 *.react on/off/emoji* ↳ Auto reactions
+║ 📜 *.menu*   ↳ Full command panel
+║
+╰════════════════════⊷
+   👑 _Powered by Zoha Engine_`;
 
-🎯 WORD CHAIN
-.wc start
-.wc join
-.wc word <word>
-
-🎲 LUDO
-.ludo start
-.ludo join
-.ludo roll
-.ludo move <1-4>
-.ludo board
-
-⚙️ SYSTEM
-.alive
-.ping
-.yt <search>
-.song <name>`
-  });
-      }
+  // same style as menu: send with image if exists
+  if (fs.existsSync("./assets/profile.jpg")) {
+    await sock.sendMessage(from, {
+      image: fs.readFileSync("./assets/profile.jpg"),
+      caption: help
+    });
+  } else {
+    await sock.sendMessage(from, { text: help });
+  }
+}
         if (command === ".video") {
   const q = args.join(" ");
   if (!q) return;
@@ -473,16 +529,74 @@ async function startBot() {
   });
         }
         if (command === '.menu') {
-            const menu = `╭═══〔 🚀 *POWER BOT* 〕═══⊷\n║ \n║ 👤 *Creators:* ZOHA & HER HUSBAND\n║ 🛠 *Status:* High-Speed Active\n║ \n╠═══〔 *COMMANDS* 〕═══⊷\n║\n║ 📥 *.img <keyword>*\n║ ↳ _Fetches 50 Ultra HD images_\n ║ 🤖 *.ai <question>*\n
-║ ↳ _Chat with Google Gemini AI_\n
-║ ↳ _1-Second Safety Delay_\n║\n║ 📜 *.menu*\n║ ↳ _Show this stylish panel_\n║\n╰══════════════════⊷\n   _Powered by Zoha Engine_`;
 
-            if (fs.existsSync('./assets/profile.jpg')) {
-                await sock.sendMessage(remoteJid, { image: fs.readFileSync('./assets/profile.jpg'), caption: menu });
-            } else {
-                await sock.sendMessage(remoteJid, { text: menu });
-            }
-        }
+const menu = `╭═══〔 🚀 *POWER BOT — FINAL BOSS* 〕═══⊷
+║ 
+║ 👤 *Creators:* ZOHA & HER HUSBAND
+║ ⚡ *Engine:* Zoha Ultimate Core
+║ 🛠 *Status:* High-Speed Active
+║ 
+╠═══〔 🤖 AI & IMAGES 〕═══⊷
+║ 📥 *.img <keyword>*
+║ ↳ Fetch 50 Ultra HD images
+║
+║ 🤖 *.ai <question>*
+║ ↳ Chat with Gemini AI
+║
+╠═══〔 🎬 MEDIA GOD 〕═══⊷
+║ 🎥 *.video <name/url>*
+║ ↳ Download video (multi-site)
+║
+║ 🎵 *.audio <name/url>*
+║ ↳ Extract audio MP3
+║
+║ 🎧 *.song <name>*
+║ ↳ Music search + download
+║
+║ 📺 *.playlist <url>*
+║ ↳ First video from playlist
+║
+║ 🧪 *.compress <url>*
+║ ↳ Reduce video size
+║
+╠═══〔 🎮 GAMES 〕═══⊷
+║ 🎯 *.wc start/join/begin*
+║ ↳ Word Chain Game
+║
+║ 🎲 *.ludo start/join*
+║ ↳ Real Ludo Multiplayer
+║
+║ 🎲 *.ludo roll / move*
+║ ↳ Play turn
+║
+║ 🖼 *.ludo board*
+║ ↳ Show board image
+║
+╠═══〔 ⚙️ SYSTEM 〕═══⊷
+║ ❤️ *.alive*
+║ ↳ Bot status
+║
+║ 🏓 *.ping*
+║ ↳ Speed test
+║
+║ 🔥 *.react on/off/emoji*
+║ ↳ Auto reactions
+║
+║ 📜 *.help*
+║ ↳ Full rules & guide
+║
+╰════════════════════⊷
+   👑 _Powered by Zoha Engine_`;
+
+    if (fs.existsSync('./assets/profile.jpg')) {
+        await sock.sendMessage(from, {
+            image: fs.readFileSync('./assets/profile.jpg'),
+            caption: menu
+        });
+    } else {
+        await sock.sendMessage(from, { text: menu });
+    }
+      }
 
         
 
