@@ -12,7 +12,7 @@ const { googleImg } = require('google-img-scrap');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // Gemini AI Configuration
-const genAI = new GoogleGenerativeAI("AIzaSyByPKYKebO_SSBPanwlfkesNj1Eh0G8quw");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const aiModel = genAI.getGenerativeModel({ 
     model: "gemini-1.5-flash",
     systemInstruction: "You are Gemini, an authentic, adaptive AI integrated into the Zoha Power Bot. Be helpful, concise, and slightly witty."
@@ -103,108 +103,62 @@ async function startBot() {
         
 
                 // COMMAND: .ai or .gemini
-        if (text.startsWith('.ai ') || text.startsWith('.gemini ')) {
-            // Extract the question after the command
-            const prompt = text.split(' ').slice(1).join(' ');
-            
-            if (!prompt) {
-                return await sock.sendMessage(remoteJid, { text: "❌ *Error:* Please provide a question!\n_Example: .ai how to make tea?_" });
-            }
+        case '.ai': {
+  const prompt = args.join(' ');
+  if (!prompt) return sock.sendMessage(from, { text: 'Ask something.' });
 
-            // Send a "typing" indicator or processing message
-            await sock.sendMessage(remoteJid, { text: "🤖 *Gemini is thinking...*" });
+  await sock.sendMessage(from, { text: '🤖 Thinking...' });
 
-            try {
-                // Generate the response
-                const result = await aiModel.generateContent(prompt);
-                const response = await result.response;
-                const aiText = response.text();
+  try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-                // Send the final answer
-                await sock.sendMessage(remoteJid, { 
-                    text: `✨ *Power Bot AI*\n\n${aiText}` 
-                });
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
 
-            } catch (error) {
-                console.error("Gemini AI Error:", error);
-                
-                let errorMessage = "⚠️ *AI Error:* Something went wrong.";
-                if (error.message.includes("API key")) {
-                    errorMessage = "⚠️ *API Error:* The Gemini API key is invalid or expired.";
-                }
+    await sock.sendMessage(from, { text });
 
-                await sock.sendMessage(remoteJid, { text: errorMessage });
-            }
-        }
+  } catch (error) {
+    console.error(error);
+    await sock.sendMessage(from, {
+      text: '⚠️ AI failed. Check API key.'
+    });
+  }
+  break;
+}
             
         
 // ... (keep your existing express and startBot code)
 
-        if (text.startsWith('.img ')) {
-            const args = text.slice(5).split(' ');
-            const lastArg = args[args.length - 1];
-            let limit = parseInt(lastArg);
-            let query;
+        
+        case '.img': {
+  const query = args.join(' ');
+  if (!query) return sock.sendMessage(from, { text: 'Send search term.' });
 
-            if (!isNaN(limit)) {
-                limit = Math.min(limit, 50); // Hard cap at 50
-                query = args.slice(0, -1).join(' ');
-            } else {
-                limit = 50;
-                query = args.join(' ');
-            }
+  await sock.sendMessage(from, { text: '🖼️ Fetching images...' });
 
-            activeTask[remoteJid] = true; 
+  try {
+    const res = await axios.get(
+      `https://serpapi.com/search.json?engine=google_images&q=${encodeURIComponent(query + " pfp dp square")}&ijn=0&api_key=${process.env.SERPAPI_KEY}`
+    );
 
-            try {
-                // Fetching from a stable source
-                const res = await axios.get(`https://api.vreden.my.id/api/googleimage?query=${encodeURIComponent(query)}`);
-                const images = res.data.result;
+    const images = res.data.images_results
+      .slice(0, 50)
+      .map(img => img.original);
 
-                if (!images || images.length === 0) {
-                    delete activeTask[remoteJid];
-                    return await sock.sendMessage(remoteJid, { text: "❌ *Error:* No images found." });
-                }
+    for (const img of images) {
+      await sock.sendMessage(from, { image: { url: img } });
+      await new Promise(r => setTimeout(r, 700)); // anti-ban delay
+    }
 
-                const actualCount = Math.min(images.length, limit);
-
-                // --- PREVIEW SECTION ---
-                let firstUrl = images[0];
-                if (firstUrl.includes('pinimg.com')) {
-                    firstUrl = firstUrl.replace(/\/(236x|474x|736x)\//g, '/originals/');
-                }
-
-                await sock.sendMessage(remoteJid, { 
-                    image: { url: firstUrl }, 
-                    caption: `📸 *Preview Mode*\n\nFound ${images.length} results. Starting delivery of ${actualCount} images for: "${query}"...\n\n_Type *.stop* to cancel._` 
-                });
-                
-                await delay(2000); // 2-second pause after preview
-
-                // --- BATCH SENDING SECTION ---
-                for (let i = 1; i < actualCount; i++) {
-                    if (!activeTask[remoteJid]) break; // Kill switch
-
-                    try {
-                        let url = images[i];
-                        if (url.includes('pinimg.com')) {
-                            url = url.replace(/\/(236x|474x|736x)\//g, '/originals/');
-                        }
-                        
-                        await sock.sendMessage(remoteJid, { 
-                            image: { url: url }, 
-                            caption: `✨ *Result:* ${i + 1}/${actualCount}` 
-                        });
-                        
-                        await delay(1500); // Anti-ban delay
-                    } catch (err) { continue; }
-                }
-            } catch (e) {
-                await sock.sendMessage(remoteJid, { text: "⚠️ *System Busy:* Could not fetch images. Try again in a moment." });
-            } finally {
-                delete activeTask[remoteJid];
-            }
-        }
+  } catch (err) {
+    console.error(err);
+    await sock.sendMessage(from, {
+      text: '⚠️ Image fetch failed.'
+    });
+  }
+  break;
+}
 
 
 
