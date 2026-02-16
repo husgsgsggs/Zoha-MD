@@ -93,51 +93,60 @@ async function startBot() {
         
 // ... (keep your existing express and startBot code)
 
-        if (text.startsWith('.img ')) {
-            const query = text.replace('.img ', '');
-            // Specifically adding "hd pinterest" to the query for better quality
-            const searchQueries = [`${query} hd pinterest`, `${query} high resolution`];
-            
-            await sock.sendMessage(remoteJid, { text: `💠 *Processing:* Fetching 50 High-Res images of "${query}"...` });
+                if (text.startsWith('.img ')) {
+            const args = text.slice(5).split(' ');
+            // If the last argument is a number, use it as the limit; otherwise default to 50
+            const lastArg = args[args.length - 1];
+            let limit = parseInt(lastArg);
+            let query;
+
+            if (!isNaN(limit)) {
+                limit = Math.min(limit, 50); // Hard cap at 50 to prevent crashes
+                query = args.slice(0, -1).join(' ');
+            } else {
+                limit = 50;
+                query = args.join(' ');
+            }
+
+            await sock.sendMessage(remoteJid, { text: `💠 *Processing:* Fetching ${limit} High-Res images of "${query}"...` });
 
             try {
-                // Using google-img-scrap for better reliability
-                const res = await googleImg(`${query} pinterest high resolution`, {
-                    limit: 50,
-                    safe: false // Set to true if you want filtered results
-                });
+                // Using axios for a more stable connection on hosted environments
+                const res = await axios.get(`https://api.fdci.se/sosmed/rep.php?gambar=${encodeURIComponent(query)}`);
+                const images = res.data.result;
 
-                if (!res.result || res.result.length === 0) {
-                    return await sock.sendMessage(remoteJid, { text: "❌ *Error:* No images found for this search." });
+                if (!images || images.length === 0) {
+                    return await sock.sendMessage(remoteJid, { text: "❌ *Error:* No images found." });
                 }
 
-                for (let i = 0; i < res.result.length; i++) {
-                    try {
-                        let url = res.result[i].url;
+                const actualCount = Math.min(images.length, limit);
 
-                        // Upgrade Pinterest links to original quality if possible
+                for (let i = 0; i < actualCount; i++) {
+                    try {
+                        let url = images[i];
+
+                        // Optimize Pinterest quality to original size
                         if (url.includes('pinimg.com')) {
                             url = url.replace(/\/(236x|474x|736x)\//g, '/originals/');
                         }
                         
                         await sock.sendMessage(remoteJid, { 
                             image: { url: url }, 
-                            caption: `✨ *Result:* ${i + 1}/${res.result.length}\n🔍 *Query:* ${query}` 
+                            caption: `✨ *Result:* ${i + 1}/${actualCount}\n🔍 *Query:* ${query}` 
                         });
                         
-                        // 1-second delay to prevent WhatsApp spam detection
-                        await delay(1000); 
+                        // 1-second safety delay to protect your WhatsApp account
+                        await delay(1000);
                     } catch (itemError) {
                         console.log(`Failed to send image ${i}:`, itemError.message);
                         continue; 
                     }
                 }
             } catch (e) {
-                console.error(e);
-                await sock.sendMessage(remoteJid, { text: "❌ *Error:* Failed to scrape images. Try a different keyword." });
+                console.error("Search Error: ", e.message);
+                await sock.sendMessage(remoteJid, { text: "❌ *Error:* The image server is busy or blocked. Please try again later." });
             }
         }
-
         }); // <--- ADD THIS BRACKET AND PARENTHESIS HERE
 
 } // This one closes the async function startBot()
