@@ -642,14 +642,8 @@ const menu = `╭═══〔 🚀 *POWER BOT — FINAL BOSS* 〕═══⊷
 ║ 🎥 *.video <name/url>*
 ║ ↳ Download video (multi-site)
 ║
-║ 🎵 *.audio <name/url>*
-║ ↳ Extract audio MP3
-║
 ║ 🎧 *.song <name>*
 ║ ↳ Music search + download
-║
-║ 📺 *.playlist <url>*
-║ ↳ First video from playlist
 ║
 ║ 🧪 *.compress <url>*
 ║ ↳ Reduce video size
