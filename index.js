@@ -96,67 +96,72 @@ async function startBot() {
 // ... (keep your existing express and startBot code)
 
 
-// INSIDE messages.upsert
-if (text.startsWith('.img ')) {
-    const args = text.slice(5).split(' ');
-    const lastArg = args[args.length - 1];
-    let limit = parseInt(lastArg);
-    let query;
+        if (text.startsWith('.img ')) {
+            const args = text.slice(5).split(' ');
+            const lastArg = args[args.length - 1];
+            let limit = parseInt(lastArg);
+            let query;
 
-    if (!isNaN(limit)) {
-        limit = Math.min(limit, 50);
-        query = args.slice(0, -1).join(' ');
-    } else {
-        limit = 50;
-        query = args.join(' ');
-    }
+            if (!isNaN(limit)) {
+                limit = Math.min(limit, 50);
+                query = args.slice(0, -1).join(' ');
+            } else {
+                limit = 50;
+                query = args.join(' ');
+            }
 
-    await sock.sendMessage(remoteJid, { text: `💠 *Processing:* Fetching ${limit} images of "${query}"...\n\n_Type *.stop* to cancel._` });
-    activeTask[remoteJid] = true; 
-
-    try {
-        // Using a more robust, high-performance search proxy
-        const res = await axios.get(`https://api.vreden.my.id/api/googleimage?query=${encodeURIComponent(query)}`);
-        const images = res.data.result;
-
-        if (!images || images.length === 0) {
-            delete activeTask[remoteJid];
-            return await sock.sendMessage(remoteJid, { text: "❌ *Error:* No images found." });
-        }
-
-        const actualCount = Math.min(images.length, limit);
-
-        for (let i = 0; i < actualCount; i++) {
-            if (!activeTask[remoteJid]) break; // The "Stop" check
+            await sock.sendMessage(remoteJid, { text: `💠 *Processing:* Fetching ${limit} images of "${query}"...\n\n_Type *.stop* to cancel._` });
+            activeTask[remoteJid] = true; 
 
             try {
-                let url = images[i];
-                // Auto-upgrade Pinterest resolution
-                if (url.includes('pinimg.com')) {
-                    url = url.replace(/\/(236x|474x|736x)\//g, '/originals/');
-                }
-                
-                await sock.sendMessage(remoteJid, { 
-                    image: { url: url }, 
-                    caption: `✨ *Result:* ${i + 1}/${actualCount}` 
-                });
-                
-                await delay(1500); 
-            } catch (err) { continue; }
-        }
-    } catch (e) {
-        await sock.sendMessage(remoteJid, { text: "⚠️ *Critical Error:* Search failed. Please try a different name." });
-    } finally {
-        delete activeTask[remoteJid];
-    }
-}
+                // This is a more stable, dedicated image search endpoint
+                const searchUrl = `https://api.lolhuman.xyz/api/gimage?apikey=GataDios&query=${encodeURIComponent(query)}`;
+                const res = await axios.get(searchUrl);
+                const images = res.data.result;
 
-if (text === '.stop') {
-    if (activeTask[remoteJid]) {
-        activeTask[remoteJid] = false; // Triggers the break in the loop
-        await sock.sendMessage(remoteJid, { text: "🛑 *Stopped successfully.*" });
-    }
-}
+                if (!images || images.length === 0) {
+                    delete activeTask[remoteJid];
+                    return await sock.sendMessage(remoteJid, { text: "❌ *Error:* No results found." });
+                }
+
+                const actualCount = Math.min(images.length, limit);
+
+                for (let i = 0; i < actualCount; i++) {
+                    if (!activeTask[remoteJid]) break; // Stops if user sends .stop
+
+                    try {
+                        let url = images[i];
+                        
+                        // Pinterest Quality Upgrade
+                        if (url.includes('pinimg.com')) {
+                            url = url.replace(/\/(236x|474x|736x)\//g, '/originals/');
+                        }
+                        
+                        await sock.sendMessage(remoteJid, { 
+                            image: { url: url }, 
+                            caption: `✨ *Result:* ${i + 1}/${actualCount}` 
+                        });
+                        
+                        await delay(1500); // Essential for anti-ban
+                    } catch (err) {
+                        continue; // Skip broken image links
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                await sock.sendMessage(remoteJid, { text: "⚠️ *System Busy:* Google is temporarily throttling requests. Please try again in 5 minutes." });
+            } finally {
+                delete activeTask[remoteJid];
+            }
+        }
+
+        if (text === '.stop') {
+            if (activeTask[remoteJid]) {
+                activeTask[remoteJid] = false;
+                await sock.sendMessage(remoteJid, { text: "🛑 *Stopped:* Image delivery cancelled." });
+            }
+        }
+
 
         }); // <--- ADD THIS BRACKET AND PARENTHESIS HERE
 
