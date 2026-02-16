@@ -122,6 +122,9 @@ async function startBot() {
                 await sock.sendMessage(remoteJid, { text: "❌ *Error:* Search failed. Check Sevalla logs for details." });
             }
         }
+        }); // <--- ADD THIS BRACKET AND PARENTHESIS HERE
+
+} // This one closes the async function startBot()
 
 // Global error handler to prevent the entire process from dying
 process.on('uncaughtException', (err) => {
