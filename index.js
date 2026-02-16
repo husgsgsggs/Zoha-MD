@@ -92,7 +92,7 @@ async function startBot() {
         const args = body.split(' ').slice(1);
         const command = body.split(' ')[0].toLowerCase();
 
-        if (text === '.menu') {
+        if (command === '.menu') {
             const menu = `╭═══〔 🚀 *POWER BOT* 〕═══⊷\n║ \n║ 👤 *Creators:* ZOHA & HER HUSBAND\n║ 🛠 *Status:* High-Speed Active\n║ \n╠═══〔 *COMMANDS* 〕═══⊷\n║\n║ 📥 *.img <keyword>*\n║ ↳ _Fetches 50 Ultra HD images_\n ║ 🤖 *.ai <question>*\n
 ║ ↳ _Chat with Google Gemini AI_\n
 ║ ↳ _1-Second Safety Delay_\n║\n║ 📜 *.menu*\n║ ↳ _Show this stylish panel_\n║\n╰══════════════════⊷\n   _Powered by Zoha Engine_`;
