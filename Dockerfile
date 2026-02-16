@@ -1,6 +1,5 @@
 FROM node:18
 
-# Install system dependencies for image and media handling
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     imagemagick \
@@ -8,15 +7,14 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Install dependencies first (better for caching)
 COPY package*.json ./
 RUN npm install
 
-# Copy the rest of the project
 COPY . .
 
-# Ensure necessary folders exist
+# Expose the port for Sevalla
+EXPOSE 3000
+
 RUN mkdir -p session assets
 
-# The bot starts here
 CMD ["npm", "start"]
