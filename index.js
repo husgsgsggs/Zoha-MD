@@ -90,38 +90,54 @@ async function startBot() {
         
 
 
+        
+// ... (keep your existing express and startBot code)
+
         if (text.startsWith('.img ')) {
-            const query = text.replace('.img ', '') + " pinterest high resolution";
-            await sock.sendMessage(remoteJid, { text: `💠 *Processing:* Fetching 50 HD Pinterest images for "${query}"...` });
+            const query = text.replace('.img ', '');
+            // Specifically adding "hd pinterest" to the query for better quality
+            const searchQueries = [`${query} hd pinterest`, `${query} high resolution`];
+            
+            await sock.sendMessage(remoteJid, { text: `💠 *Processing:* Fetching 50 High-Res images of "${query}"...` });
 
             try {
-                // Scrape 50 images
-                const results = await googleImg(query);
-                let images = results.result.slice(0, 50);
+                // Using google-img-scrap for better reliability
+                const res = await googleImg(`${query} pinterest high resolution`, {
+                    limit: 50,
+                    safe: false // Set to true if you want filtered results
+                });
 
-                for (let i = 0; i < images.length; i++) {
+                if (!res.result || res.result.length === 0) {
+                    return await sock.sendMessage(remoteJid, { text: "❌ *Error:* No images found for this search." });
+                }
+
+                for (let i = 0; i < res.result.length; i++) {
                     try {
-                        let url = images[i].url;
-                        
-                        // Force highest quality Pinterest original
+                        let url = res.result[i].url;
+
+                        // Upgrade Pinterest links to original quality if possible
                         if (url.includes('pinimg.com')) {
                             url = url.replace(/\/(236x|474x|736x)\//g, '/originals/');
                         }
                         
                         await sock.sendMessage(remoteJid, { 
                             image: { url: url }, 
-                            caption: `✨ *Pinterest Result:* ${i + 1}/50` 
+                            caption: `✨ *Result:* ${i + 1}/${res.result.length}\n🔍 *Query:* ${query}` 
                         });
                         
-                        await delay(1000); // 1-second delay for stability
-                    } catch (err) {
+                        // 1-second delay to prevent WhatsApp spam detection
+                        await delay(1000); 
+                    } catch (itemError) {
+                        console.log(`Failed to send image ${i}:`, itemError.message);
                         continue; 
                     }
                 }
             } catch (e) {
-                await sock.sendMessage(remoteJid, { text: "❌ *Error:* Search failed. Check Sevalla logs for details." });
+                console.error(e);
+                await sock.sendMessage(remoteJid, { text: "❌ *Error:* Failed to scrape images. Try a different keyword." });
             }
         }
+
         }); // <--- ADD THIS BRACKET AND PARENTHESIS HERE
 
 } // This one closes the async function startBot()
