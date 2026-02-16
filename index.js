@@ -6,6 +6,32 @@ const {
 const pino = require("pino");
 const fs = require("fs");
 const axios = require("axios");
+const express = require("express"); // Added Express
+const QRCode = require("qrcode"); // Added QRCode
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+let qrCodeBuffer = null;
+
+// Simple web endpoint to show the QR code
+app.get("/", (req, res) => {
+    if (qrCodeBuffer) {
+        res.send(`
+            <html>
+                <body style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif;">
+                    <h1>Zoha Power Bot - Scan QR</h1>
+                    <img src="${qrCodeBuffer}" width="300"/>
+                    <p>Scan this with your WhatsApp to connect.</p>
+                    <script>setTimeout(() => { location.reload(); }, 20000);</script>
+                </body>
+            </html>
+        `);
+    } else {
+        res.send("<h2>QR Code not ready or already connected! Check console.</h2>");
+    }
+});
+
+app.listen(PORT, () => console.log(`🌐 Web server running on port ${PORT}`));
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('session');
@@ -17,35 +43,29 @@ async function startBot() {
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "silent" })),
         },
-        printQRInTerminal: false,
+        printQRInTerminal: true, // Keep this for backup
         logger: pino({ level: "silent" }),
-        browser: ["Chrome (Linux)", "Chrome", "114.0.5735.198"]
+        browser: ["Zoha-Bot", "Chrome", "1.0.0"]
     });
-
-    // --- PAIRING LOGIC (Using Env Variable) ---
-    if (!sock.authState.creds.registered) {
-        const phoneNumber = process.env.BOT_NUMBER; 
-        if (phoneNumber) {
-            console.log(`\n⏳ Requesting Pairing Code for: ${phoneNumber}...`);
-            await delay(5000); 
-            const code = await sock.requestPairingCode(phoneNumber.trim());
-            console.log(`\n💎 YOUR PAIRING CODE: ${code}\n`);
-        } else {
-            console.log("\n❌ ERROR: 'BOT_NUMBER' variable not found in Sevalla settings!");
-        }
-    }
 
     sock.ev.on('creds.update', saveCreds);
 
-    // --- AUTO-RESTART LOGIC ---
-    sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect } = update;
+    sock.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect, qr } = update;
+
+        // Generate QR image for the website if a new QR is issued
+        if (qr) {
+            qrCodeBuffer = await QRCode.toDataURL(qr);
+            console.log("📌 New QR Code generated. View it at your Sevalla URL.");
+        }
+
         if (connection === 'close') {
+            qrCodeBuffer = null; // Clear QR on close
             const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log('🔄 Connection closed. Reconnecting:', shouldReconnect);
-            if (shouldReconnect) startBot(); // Auto-restart the function
+            if (shouldReconnect) startBot();
         } else if (connection === 'open') {
-            console.log('✅ Zoha Power Bot Online & Stable!');
+            qrCodeBuffer = null; // Clear QR once connected
+            console.log('✅ Zoha Power Bot Online!');
         }
     });
 
