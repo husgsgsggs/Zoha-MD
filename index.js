@@ -8,6 +8,8 @@ const fs = require("fs");
 const axios = require("axios");
 const express = require("express"); // Added Express
 const QRCode = require("qrcode"); // Added QRCode
+const google = require('google-this'); // Add this at the top with other requires
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -85,38 +87,49 @@ async function startBot() {
             }
         }
 
-        if (text.startsWith('.img ')) {
-            const query = text.replace('.img ', '');
-            await sock.sendMessage(remoteJid, { text: `💠 *Processing:* Fetching 50 High-Res images of "${query}"...` });
+        
 
+
+if (text.startsWith('.img ')) {
+    const query = text.replace('.img ', '') + " pinterest high resolution"; // Force Pinterest search
+    await sock.sendMessage(remoteJid, { text: `💠 *Processing:* Fetching 50 Ultra HD Pinterest images for "${query}"...` });
+
+    try {
+        // Scrape images using google-this
+        const results = await google.image(query, { safe: false });
+        
+        if (!results || results.length === 0) {
+            throw new Error("No images found.");
+        }
+
+        // Limit to 50 images
+        let images = results.slice(0, 50);
+
+        for (let i = 0; i < images.length; i++) {
             try {
-                const res = await axios.get(`https://api.fdci.se/sosmed/rep.php?gambar=${query}`);
-                let images = res.data.result.slice(0, 50);
+                let url = images[i].url;
 
-                for (let i = 0; i < images.length; i++) {
-                    try {
-                        let url = images[i];
-                        if (url.includes('pinimg.com')) {
-                            url = url.replace(/\/(236x|474x|736x)\//g, '/originals/');
-                        }
-                        
-                        await sock.sendMessage(remoteJid, { 
-                            image: { url }, 
-                            caption: `✨ *Result:* ${i + 1}/50` 
-                        });
-                        
-                        await delay(1000); // 1-second delay is crucial for heavy sending
-                    } catch (itemError) {
-                        console.log(`Failed to send image ${i}:`, itemError.message);
-                        // Continue to next image even if one fails
-                        continue; 
-                    }
+                // Enhanced Pinterest High-Res Fix
+                // Replaces standard thumbnails with 'originals' for maximum quality
+                if (url.includes('pinimg.com')) {
+                    url = url.replace(/\/(236x|474x|736x)\//g, '/originals/');
                 }
-            } catch (e) {
-                await sock.sendMessage(remoteJid, { text: "❌ *Error:* The image server is busy. Try again." });
+                
+                await sock.sendMessage(remoteJid, { 
+                    image: { url: url }, 
+                    caption: `✨ *Pinterest Result:* ${i + 1}/50` 
+                });
+                
+                await delay(1000); // 1-second delay between sends
+            } catch (itemError) {
+                console.log(`Failed to send image ${i}:`, itemError.message);
+                continue; 
             }
         }
-    });
+    } catch (e) {
+        console.error("Scraping Error:", e.message);
+        await sock.sendMessage(remoteJid, { text: "❌ *Error:* Could not fetch images from Pinterest. Try a different keyword." });
+    }
 }
 
 // Global error handler to prevent the entire process from dying
