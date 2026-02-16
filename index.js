@@ -19,7 +19,7 @@ async function startBot() {
         },
         printQRInTerminal: false,
         logger: pino({ level: "silent" }),
-        browser: ["Ubuntu", "Chrome", "20.0.04"]
+        browser: ["Chrome (Linux)", "Chrome", "114.0.5735.198"]
     });
 
     // --- PAIRING LOGIC (Using Env Variable) ---
