@@ -14,6 +14,8 @@ const { googleImg } = require('google-img-scrap');
 const app = express();
 const PORT = process.env.PORT || 3000;
 let qrCodeBuffer = null;
+// 1. Add this variable near your other 'let' variables (like qrCodeBuffer)
+let activeTask = {};
 
 // Simple web endpoint to show the QR code
 app.get("/", (req, res) => {
@@ -93,60 +95,73 @@ async function startBot() {
         
 // ... (keep your existing express and startBot code)
 
-                if (text.startsWith('.img ')) {
-            const args = text.slice(5).split(' ');
-            // If the last argument is a number, use it as the limit; otherwise default to 50
-            const lastArg = args[args.length - 1];
-            let limit = parseInt(lastArg);
-            let query;
 
-            if (!isNaN(limit)) {
-                limit = Math.min(limit, 50); // Hard cap at 50 to prevent crashes
-                query = args.slice(0, -1).join(' ');
-            } else {
-                limit = 50;
-                query = args.join(' ');
-            }
+// 2. Replace your .img and add the .stop command inside sock.ev.on('messages.upsert')
+if (text.startsWith('.img ')) {
+    const args = text.slice(5).split(' ');
+    const lastArg = args[args.length - 1];
+    let limit = parseInt(lastArg);
+    let query;
 
-            await sock.sendMessage(remoteJid, { text: `💠 *Processing:* Fetching ${limit} High-Res images of "${query}"...` });
+    if (!isNaN(limit)) {
+        limit = Math.min(limit, 50);
+        query = args.slice(0, -1).join(' ');
+    } else {
+        limit = 50;
+        query = args.join(' ');
+    }
+
+    await sock.sendMessage(remoteJid, { text: `💠 *Processing:* Fetching ${limit} images of "${query}"...\n\n_Type *.stop* to cancel at any time._` });
+    
+    activeTask[remoteJid] = true; // Set task as active
+
+    try {
+        // Switching to a more stable search source
+        const searchUrl = `https://weeb-api.vercel.app/api/googleimage?query=${encodeURIComponent(query)}`;
+        const res = await axios.get(searchUrl);
+        const images = res.data.result;
+
+        if (!images || images.length === 0) {
+            return await sock.sendMessage(remoteJid, { text: "❌ *Error:* No images found for this keyword." });
+        }
+
+        const actualCount = Math.min(images.length, limit);
+
+        for (let i = 0; i < actualCount; i++) {
+            // Check if the user sent .stop
+            if (!activeTask[remoteJid]) break;
 
             try {
-                // Using axios for a more stable connection on hosted environments
-                const res = await axios.get(`https://api.fdci.se/sosmed/rep.php?gambar=${encodeURIComponent(query)}`);
-                const images = res.data.result;
-
-                if (!images || images.length === 0) {
-                    return await sock.sendMessage(remoteJid, { text: "❌ *Error:* No images found." });
+                let url = images[i];
+                if (url.includes('pinimg.com')) {
+                    url = url.replace(/\/(236x|474x|736x)\//g, '/originals/');
                 }
-
-                const actualCount = Math.min(images.length, limit);
-
-                for (let i = 0; i < actualCount; i++) {
-                    try {
-                        let url = images[i];
-
-                        // Optimize Pinterest quality to original size
-                        if (url.includes('pinimg.com')) {
-                            url = url.replace(/\/(236x|474x|736x)\//g, '/originals/');
-                        }
-                        
-                        await sock.sendMessage(remoteJid, { 
-                            image: { url: url }, 
-                            caption: `✨ *Result:* ${i + 1}/${actualCount}\n🔍 *Query:* ${query}` 
-                        });
-                        
-                        // 1-second safety delay to protect your WhatsApp account
-                        await delay(1000);
-                    } catch (itemError) {
-                        console.log(`Failed to send image ${i}:`, itemError.message);
-                        continue; 
-                    }
-                }
-            } catch (e) {
-                console.error("Search Error: ", e.message);
-                await sock.sendMessage(remoteJid, { text: "❌ *Error:* The image server is busy or blocked. Please try again later." });
+                
+                await sock.sendMessage(remoteJid, { 
+                    image: { url: url }, 
+                    caption: `✨ *Result:* ${i + 1}/${actualCount}` 
+                });
+                
+                await delay(1500); // Increased slightly for stability
+            } catch (itemError) {
+                continue; 
             }
         }
+        delete activeTask[remoteJid]; // Cleanup after finishing
+    } catch (e) {
+        await sock.sendMessage(remoteJid, { text: "⚠️ *Server Error:* Try again with a simpler keyword or try later." });
+    }
+}
+
+// THE STOP COMMAND
+if (text === '.stop') {
+    if (activeTask[remoteJid]) {
+        activeTask[remoteJid] = false;
+        await sock.sendMessage(remoteJid, { text: "🛑 *Stopped:* Image sending cancelled." });
+    } else {
+        await sock.sendMessage(remoteJid, { text: "❓ No active image tasks to stop." });
+    }
+}
         }); // <--- ADD THIS BRACKET AND PARENTHESIS HERE
 
 } // This one closes the async function startBot()
