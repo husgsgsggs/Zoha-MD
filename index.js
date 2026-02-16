@@ -96,7 +96,7 @@ async function startBot() {
 // ... (keep your existing express and startBot code)
 
 
-// 2. Replace your .img and add the .stop command inside sock.ev.on('messages.upsert')
+// INSIDE messages.upsert
 if (text.startsWith('.img ')) {
     const args = text.slice(5).split(' ');
     const lastArg = args[args.length - 1];
@@ -111,28 +111,27 @@ if (text.startsWith('.img ')) {
         query = args.join(' ');
     }
 
-    await sock.sendMessage(remoteJid, { text: `💠 *Processing:* Fetching ${limit} images of "${query}"...\n\n_Type *.stop* to cancel at any time._` });
-    
-    activeTask[remoteJid] = true; // Set task as active
+    await sock.sendMessage(remoteJid, { text: `💠 *Processing:* Fetching ${limit} images of "${query}"...\n\n_Type *.stop* to cancel._` });
+    activeTask[remoteJid] = true; 
 
     try {
-        // Switching to a more stable search source
-        const searchUrl = `https://weeb-api.vercel.app/api/googleimage?query=${encodeURIComponent(query)}`;
-        const res = await axios.get(searchUrl);
+        // Using a more robust, high-performance search proxy
+        const res = await axios.get(`https://api.vreden.my.id/api/googleimage?query=${encodeURIComponent(query)}`);
         const images = res.data.result;
 
         if (!images || images.length === 0) {
-            return await sock.sendMessage(remoteJid, { text: "❌ *Error:* No images found for this keyword." });
+            delete activeTask[remoteJid];
+            return await sock.sendMessage(remoteJid, { text: "❌ *Error:* No images found." });
         }
 
         const actualCount = Math.min(images.length, limit);
 
         for (let i = 0; i < actualCount; i++) {
-            // Check if the user sent .stop
-            if (!activeTask[remoteJid]) break;
+            if (!activeTask[remoteJid]) break; // The "Stop" check
 
             try {
                 let url = images[i];
+                // Auto-upgrade Pinterest resolution
                 if (url.includes('pinimg.com')) {
                     url = url.replace(/\/(236x|474x|736x)\//g, '/originals/');
                 }
@@ -142,26 +141,23 @@ if (text.startsWith('.img ')) {
                     caption: `✨ *Result:* ${i + 1}/${actualCount}` 
                 });
                 
-                await delay(1500); // Increased slightly for stability
-            } catch (itemError) {
-                continue; 
-            }
+                await delay(1500); 
+            } catch (err) { continue; }
         }
-        delete activeTask[remoteJid]; // Cleanup after finishing
     } catch (e) {
-        await sock.sendMessage(remoteJid, { text: "⚠️ *Server Error:* Try again with a simpler keyword or try later." });
+        await sock.sendMessage(remoteJid, { text: "⚠️ *Critical Error:* Search failed. Please try a different name." });
+    } finally {
+        delete activeTask[remoteJid];
     }
 }
 
-// THE STOP COMMAND
 if (text === '.stop') {
     if (activeTask[remoteJid]) {
-        activeTask[remoteJid] = false;
-        await sock.sendMessage(remoteJid, { text: "🛑 *Stopped:* Image sending cancelled." });
-    } else {
-        await sock.sendMessage(remoteJid, { text: "❓ No active image tasks to stop." });
+        activeTask[remoteJid] = false; // Triggers the break in the loop
+        await sock.sendMessage(remoteJid, { text: "🛑 *Stopped successfully.*" });
     }
 }
+
         }); // <--- ADD THIS BRACKET AND PARENTHESIS HERE
 
 } // This one closes the async function startBot()
