@@ -16,7 +16,27 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const aiModel = genAI.getGenerativeModel({
   model: "gemini-2.5-flash"
 });
+function getMessageText(msg) {
+  const m = msg?.message;
+  if (!m) return "";
 
+  // unwrap common wrappers used a lot in groups
+  const inner =
+    m.ephemeralMessage?.message ||
+    m.viewOnceMessageV2?.message ||
+    m.viewOnceMessageV2Extension?.message ||
+    m.documentWithCaptionMessage?.message ||
+    m;
+
+  return (
+    inner.conversation ||
+    inner.extendedTextMessage?.text ||
+    inner.imageMessage?.caption ||
+    inner.videoMessage?.caption ||
+    inner.documentMessage?.caption ||
+    ""
+  ).trim();
+      }
 
 
 const app = express();
@@ -84,7 +104,7 @@ async function startBot() {
     sock.ev.on('messages.upsert', async (m) => {
         const msg = m.messages[0];
         if (!msg.message || msg.key.fromMe) return;
-        const text = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
+        const text = getMessageText(msg);
         const remoteJid = msg.key.remoteJid;
         const from = remoteJid;
         const body = text.trim();
