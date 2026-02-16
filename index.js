@@ -9,6 +9,15 @@ const axios = require("axios");
 const express = require("express"); // Added Express
 const QRCode = require("qrcode"); // Added QRCode
 const { googleImg } = require('google-img-scrap');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Gemini AI Configuration
+const genAI = new GoogleGenerativeAI("AIzaSyByPKYKebO_SSBPanwlfkesNj1Eh0G8quw");
+const aiModel = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-flash",
+    systemInstruction: "You are Gemini, an authentic, adaptive AI integrated into the Zoha Power Bot. Be helpful, concise, and slightly witty."
+});
+
 
 
 const app = express();
@@ -80,7 +89,9 @@ async function startBot() {
         const remoteJid = msg.key.remoteJid;
 
         if (text === '.menu') {
-            const menu = `╭═══〔 🚀 *POWER BOT* 〕═══⊷\n║ \n║ 👤 *Creators:* ZOHA & HER HUSBAND\n║ 🛠 *Status:* High-Speed Active\n║ \n╠═══〔 *COMMANDS* 〕═══⊷\n║\n║ 📥 *.img <keyword>*\n║ ↳ _Fetches 50 Ultra HD images_\n║ ↳ _1-Second Safety Delay_\n║\n║ 📜 *.menu*\n║ ↳ _Show this stylish panel_\n║\n╰══════════════════⊷\n   _Powered by Zoha Engine_`;
+            const menu = `╭═══〔 🚀 *POWER BOT* 〕═══⊷\n║ \n║ 👤 *Creators:* ZOHA & HER HUSBAND\n║ 🛠 *Status:* High-Speed Active\n║ \n╠═══〔 *COMMANDS* 〕═══⊷\n║\n║ 📥 *.img <keyword>*\n║ ↳ _Fetches 50 Ultra HD images_\n ║ 🤖 *.ai <question>*\n
+║ ↳ _Chat with Google Gemini AI_\n
+║ ↳ _1-Second Safety Delay_\n║\n║ 📜 *.menu*\n║ ↳ _Show this stylish panel_\n║\n╰══════════════════⊷\n   _Powered by Zoha Engine_`;
 
             if (fs.existsSync('./assets/profile.jpg')) {
                 await sock.sendMessage(remoteJid, { image: fs.readFileSync('./assets/profile.jpg'), caption: menu });
@@ -91,7 +102,41 @@ async function startBot() {
 
         
 
+                // COMMAND: .ai or .gemini
+        if (text.startsWith('.ai ') || text.startsWith('.gemini ')) {
+            // Extract the question after the command
+            const prompt = text.split(' ').slice(1).join(' ');
+            
+            if (!prompt) {
+                return await sock.sendMessage(remoteJid, { text: "❌ *Error:* Please provide a question!\n_Example: .ai how to make tea?_" });
+            }
 
+            // Send a "typing" indicator or processing message
+            await sock.sendMessage(remoteJid, { text: "🤖 *Gemini is thinking...*" });
+
+            try {
+                // Generate the response
+                const result = await aiModel.generateContent(prompt);
+                const response = await result.response;
+                const aiText = response.text();
+
+                // Send the final answer
+                await sock.sendMessage(remoteJid, { 
+                    text: `✨ *Power Bot AI*\n\n${aiText}` 
+                });
+
+            } catch (error) {
+                console.error("Gemini AI Error:", error);
+                
+                let errorMessage = "⚠️ *AI Error:* Something went wrong.";
+                if (error.message.includes("API key")) {
+                    errorMessage = "⚠️ *API Error:* The Gemini API key is invalid or expired.";
+                }
+
+                await sock.sendMessage(remoteJid, { text: errorMessage });
+            }
+        }
+            
         
 // ... (keep your existing express and startBot code)
 
