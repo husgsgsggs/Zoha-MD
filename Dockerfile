@@ -1,25 +1,29 @@
-FROM node:18
+FROM node:18-bullseye
 
-# System tools for media processing
+# System tools for media processing + certificates
 RUN apt-get update && apt-get install -y \
     ffmpeg \
-    imagemagick \
     python3 \
     python3-pip \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    curl \
+ && rm -rf /var/lib/apt/lists/*
 
-# Universal downloader
-RUN pip3 install yt-dlp
+# Install latest yt-dlp (pip version can be old sometimes)
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
+    -o /usr/local/bin/yt-dlp \
+ && chmod a+rx /usr/local/bin/yt-dlp
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm i --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
+# Create folders used by Baileys
 RUN mkdir -p session assets
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["npm","start"]
