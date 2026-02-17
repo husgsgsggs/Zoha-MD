@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_18", "ffmpeg", "python3", "python3Packages.pip"]
+
+[phases.install]
+cmds = [
+  "pip3 install -U yt-dlp",
+  "npm install --legacy-peer-deps"
+]
+
+[start]
+cmd = "node index.js"
