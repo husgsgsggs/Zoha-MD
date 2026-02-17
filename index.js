@@ -18,6 +18,13 @@ const PImage = require("pureimage");
 const path = require("path");
 const os = require("os");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+process.on("uncaughtException", err => {
+  console.error("Uncaught:", err);
+});
+
+process.on("unhandledRejection", err => {
+  console.error("Unhandled:", err);
+});
 
 // Gemini AI Configuration
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -157,24 +164,25 @@ async function startBot() {
         }
     });
 
-    sock.ev.on("messages.upsert", async (m) => {
-  const msg = m.messages?.[0];
+    sock.ev.on("messages.upsert", async ({ messages }) => {
+  const msg = messages[0];
   if (!msg.message) return;
 
   const from = msg.key.remoteJid;
-  if (!from || from === "status@broadcast") return;
 
+  // ⭐ THIS is the correct group detection
   const isGroup = from.endsWith("@g.us");
-  
-  const sender = isGroup ? msg.key.participant : from;
 
-  if (msg.key.fromMe) return;
+  const body =
+    msg.message.conversation ||
+    msg.message.extendedTextMessage?.text ||
+    msg.message.imageMessage?.caption ||
+    msg.message.videoMessage?.caption ||
+    "";
 
-  const body = getMessageText(msg);
-  if (!body) return;
   console.log("FROM:", from, "ISGROUP:", isGroup, "BODY:", body);
-  const command = body.split(" ")[0].toLowerCase();
-  const args = body.split(" ").slice(1);
+
+});
 
   // ✅ your commands below...
 
