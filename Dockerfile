@@ -14,7 +14,7 @@ RUN pip3 install yt-dlp
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm i --legacy-peer-deps
 
 COPY . .
 
