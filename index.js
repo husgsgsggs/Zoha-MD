@@ -536,13 +536,16 @@ if (command === ".ludo" && args[0] === "end") {
         "--merge-output-format", "mp4",
         "--max-filesize", "50M"
       ]);
+      const size = fs.existsSync(file) ? fs.statSync(file).size : 0;
+if (size === 0) throw new Error("Downloaded file is empty (yt-dlp extraction failed)");
 
       const buff = fs.readFileSync(file);
       await sock.sendMessage(from, { video: buff, caption: "🎥 Video downloaded" });
 
-    } catch (e) {
-      console.error(e);
-      await sock.sendMessage(from, { text: "Download failed" });
+    } catch (err) {
+  console.error("YT-DLP ERROR:", err);
+  await sock.sendMessage(from, { text: "Download failed: " + (err?.message || "unknown") });
+                                                              }
 
     } finally {
       try { fs.unlinkSync(file); } catch {}
@@ -570,6 +573,8 @@ if (command === ".ludo" && args[0] === "end") {
         "--audio-format", "mp3",
         "--max-filesize", "50M"
       ]);
+     const size = fs.existsSync(file) ? fs.statSync(file).size : 0;
+if (size === 0) throw new Error("Downloaded file is empty (yt-dlp extraction failed)");
 
       const buff = fs.readFileSync(file);
 
@@ -617,6 +622,8 @@ if (command === ".ludo" && args[0] === "end") {
         }
       );
     });
+    const size = fs.existsSync(out) ? fs.statSync(out).size : 0;
+if (size === 0) throw new Error("Compression failed (empty file)");
 
     // 3) Send as Buffer (most reliable)
     const buff = fs.readFileSync(out);
