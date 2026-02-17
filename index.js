@@ -17,7 +17,6 @@ const { exec, execFile } = require("child_process");
 const PImage = require("pureimage");
 const path = require("path");
 const os = require("os");
-const { googleImg } = require('google-img-scrap');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // Gemini AI Configuration
