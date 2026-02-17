@@ -785,10 +785,7 @@ const menu = `╭═══〔 🚀 *POWER BOT — FINAL BOSS* 〕═══⊷
 } // This one closes the async function startBot()
 
 // Global error handler to prevent the entire process from dying
-process.on('uncaughtException', (err) => {
-    console.error('Caught exception: ', err);
-    startBot(); 
-});
+
 
 startBot();
         
