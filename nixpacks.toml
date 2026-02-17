@@ -3,10 +3,12 @@ nixPkgs = ["nodejs_18", "ffmpeg", "curl"]
 
 [phases.install]
 cmds = [
-  "curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp",
-  "chmod +x /usr/local/bin/yt-dlp",
+  "mkdir -p $HOME/.local/bin",
+  "curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o $HOME/.local/bin/yt-dlp",
+  "chmod +x $HOME/.local/bin/yt-dlp",
+  "export PATH=$HOME/.local/bin:$PATH",
   "npm install --legacy-peer-deps"
 ]
 
 [start]
-cmd = "node index.js"
+cmd = "PATH=$HOME/.local/bin:$PATH node index.js"
