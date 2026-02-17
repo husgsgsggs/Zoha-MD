@@ -544,9 +544,11 @@ if (size === 0) throw new Error("Downloaded file is empty (yt-dlp extraction fai
 
     } catch (err) {
   console.error("YT-DLP ERROR:", err);
-  await sock.sendMessage(from, { text: "Download failed: " + (err?.message || "unknown") });
-                                                              }
 
+  await sock.sendMessage(from, {
+    text: "Download failed: " + (err?.message || "unknown")
+  });
+  }
     } finally {
       try { fs.unlinkSync(file); } catch {}
     }
