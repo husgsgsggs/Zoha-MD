@@ -28,13 +28,12 @@ function getMessageText(msg) {
   const m = msg?.message;
   if (!m) return "";
 
-  // unwrap common wrappers used a lot in groups
   const inner =
     m.ephemeralMessage?.message ||
     m.viewOnceMessageV2?.message ||
     m.viewOnceMessageV2Extension?.message ||
-    m.documentWithCaptionMessage?.message ||
     m.editedMessage?.message ||
+    m.documentWithCaptionMessage?.message ||
     m;
 
   return (
@@ -43,6 +42,9 @@ function getMessageText(msg) {
     inner.imageMessage?.caption ||
     inner.videoMessage?.caption ||
     inner.documentMessage?.caption ||
+    inner.buttonsResponseMessage?.selectedButtonId ||
+    inner.listResponseMessage?.singleSelectReply?.selectedRowId ||
+    inner.templateButtonReplyMessage?.selectedId ||
     ""
   ).trim();
       }
@@ -155,21 +157,26 @@ async function startBot() {
         }
     });
 
-    sock.ev.on('messages.upsert', async (m) => {
-        const msg = m.messages?.[0];
-        if (!msg) return;
+    sock.ev.on("messages.upsert", async (m) => {
+  const msg = m.messages?.[0];
+  if (!msg.message) return;
 
-        const from = msg.key.remoteJid;
-        const isGroup = from?.endsWith("@g.us");
-        const sender = isGroup ? msg.key.participant : from;
+  const from = msg.key.remoteJid;
+  if (!from || from === "status@broadcast") return;
 
-        if (msg.key.fromMe) return;
+  const isGroup = from.endsWith("@g.us");
+  
+  const sender = isGroup ? msg.key.participant : from;
 
-        const body = getMessageText(msg);
-        if (!body) return;
+  if (msg.key.fromMe) return;
 
-        const args = body.split(" ").slice(1);
-        const command = body.split(" ")[0].toLowerCase();
+  const body = getMessageText(msg);
+  if (!body) return;
+  console.log("FROM:", from, "ISGROUP:", isGroup, "BODY:", body);
+  const command = body.split(" ")[0].toLowerCase();
+  const args = body.split(" ").slice(1);
+
+  // ✅ your commands below...
 
 // 🔥 Auto reaction
         const isFromMe = msg.key.fromMe === true;
