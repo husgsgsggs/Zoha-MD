@@ -34,6 +34,7 @@ function getMessageText(msg) {
     m.viewOnceMessageV2?.message ||
     m.viewOnceMessageV2Extension?.message ||
     m.documentWithCaptionMessage?.message ||
+    m.editedMessage?.message ||
     m;
 
   return (
@@ -155,17 +156,20 @@ async function startBot() {
     });
 
     sock.ev.on('messages.upsert', async (m) => {
-        const msg = m.messages[0];
-        if (!msg.message || msg.key.fromMe) return;
-        const text = getMessageText(msg);
-        const remoteJid = msg.key.remoteJid;
-        const from = remoteJid;
-        const body = text.trim();
-        const args = body.split(' ').slice(1);
-        const command = body.split(' ')[0].toLowerCase();
-        const isGroup = from.endsWith("@g.us");
-        const sender = msg.key.participant || from;
-        const user = getUser(sender);
+        const msg = m.messages?.[0];
+        if (!msg) return;
+
+        const from = msg.key.remoteJid;
+        const isGroup = from?.endsWith("@g.us");
+        const sender = isGroup ? msg.key.participant : from;
+
+        if (msg.key.fromMe) return;
+
+        const body = getMessageText(msg);
+        if (!body) return;
+
+        const args = body.split(" ").slice(1);
+        const command = body.split(" ")[0].toLowerCase();
 
 // 🔥 Auto reaction
         const isFromMe = msg.key.fromMe === true;
