@@ -513,6 +513,7 @@ if (command === ".ludo" && args[0] === "end") {
     await sock.sendMessage(from, { text: help });
   }
 }
+        
         if (command === ".video") {
   return withDownloadLock(from, async () => {
 
@@ -536,26 +537,28 @@ if (command === ".ludo" && args[0] === "end") {
         "--merge-output-format", "mp4",
         "--max-filesize", "50M"
       ]);
-      const size = fs.existsSync(file) ? fs.statSync(file).size : 0;
-if (size === 0) throw new Error("Downloaded file is empty (yt-dlp extraction failed)");
 
       const buff = fs.readFileSync(file);
-      await sock.sendMessage(from, { video: buff, caption: "🎥 Video downloaded" });
+
+      await sock.sendMessage(from, {
+        video: buff,
+        caption: "🎥 Video downloaded"
+      });
 
     } catch (err) {
-  console.error("YT-DLP ERROR:", err);
+      console.error(err);
+      await sock.sendMessage(from, {
+        text: "Download failed."
+      });
 
-  await sock.sendMessage(from, {
-    text: "Download failed: " + (err?.message || "unknown")
-  });
-  }
     } finally {
       try { fs.unlinkSync(file); } catch {}
     }
 
-  }).catch(e => sock.sendMessage(from, { text: e.message }));
-}
-        
+  }).catch(e =>
+    sock.sendMessage(from, { text: e.message })
+  );
+        }
         if (command === ".song") {
   const q = args.join(" ");
   if (!q) return sock.sendMessage(from, { text: "Use: .song <name>" });
