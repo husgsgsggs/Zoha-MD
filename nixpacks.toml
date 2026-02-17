@@ -1,8 +1,11 @@
 [phases.setup]
-nixPkgs = ["nodejs_18", "ffmpeg", "yt-dlp"]
+nixPkgs = ["nodejs_18", "ffmpeg", "python3", "python3Packages.pip"]
 
 [phases.install]
-cmds = ["npm install --legacy-peer-deps"]
+cmds = [
+  "python3 -m pip install --user -U yt-dlp",
+  "npm install --legacy-peer-deps"
+]
 
 [start]
 cmd = "npm start"
