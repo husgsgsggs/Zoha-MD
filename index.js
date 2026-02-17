@@ -165,12 +165,11 @@ async function startBot() {
     });
 
     sock.ev.on("messages.upsert", async ({ messages }) => {
+
   const msg = messages[0];
   if (!msg.message) return;
 
   const from = msg.key.remoteJid;
-
-  // ⭐ THIS is the correct group detection
   const isGroup = from.endsWith("@g.us");
 
   const body =
@@ -180,10 +179,14 @@ async function startBot() {
     msg.message.videoMessage?.caption ||
     "";
 
+  if (!body) return;
+
+  const args = body.trim().split(/\s+/);
+  const command = args.shift()?.toLowerCase();
+
   console.log("FROM:", from, "ISGROUP:", isGroup, "BODY:", body);
 
-});
-
+  
   // ✅ your commands below...
 
 // 🔥 Auto reaction
