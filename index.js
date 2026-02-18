@@ -140,7 +140,8 @@ async function startBot() {
         },
         printQRInTerminal: true, // Keep this for backup
         logger: pino({ level: "silent" }),
-        browser: ["Zoha-Bot", "Chrome", "1.0.0"]
+        browser: ["Zoha-Bot", "Chrome", "1.0.0"],
+        defaultQueryTimeoutMs: 0
     });
 
     sock.ev.on('creds.update', saveCreds);
@@ -161,6 +162,7 @@ async function startBot() {
         } else if (connection === 'open') {
             qrCodeBuffer = null; // Clear QR once connected
             console.log('✅ Zoha Power Bot Online!');
+            await delay(5000); // ⭐ ADD THIS LINE
         }
     });
 
