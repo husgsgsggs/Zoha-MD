@@ -788,13 +788,9 @@ const menu = `╭═══〔 🚀 *POWER BOT — FINAL BOSS* 〕═══⊷
     console.error("❌ Message handler error:", err);
   }
 
-   }
+   });
 
 
-
-        }); // <--- ADD THIS BRACKET AND PARENTHESIS HERE
-
-} // This one closes the async function startBot()
 
 // Global error handler to prevent the entire process from dying
 
