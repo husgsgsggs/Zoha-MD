@@ -782,6 +782,7 @@ const menu = `╭═══〔 🚀 *POWER BOT — FINAL BOSS* 〕═══⊷
       text: '⚠️ Image fetch failed.'
     });
   }
+  }
      
   } catch (err) {
     console.error("❌ Message handler error:", err);
