@@ -796,4 +796,3 @@ const menu = `╭═══〔 🚀 *POWER BOT — FINAL BOSS* 〕═══⊷
 
 
 startBot();
-        
