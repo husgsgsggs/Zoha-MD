@@ -141,7 +141,8 @@ async function startBot() {
         printQRInTerminal: true, // Keep this for backup
         logger: pino({ level: "silent" }),
         browser: ["Zoha-Bot", "Chrome", "1.0.0"],
-        defaultQueryTimeoutMs: 0
+        defaultQueryTimeoutMs: 0,
+        getMessage: async () => ({ key: {}, message: { conversation: "" } })
     });
 
     sock.ev.on('creds.update', saveCreds);
