@@ -427,26 +427,21 @@ if (command === ".ludo" && args[0] === "board") {
   const file = path.join(os.tmpdir(), "ludo.png");
 
   try {
-    const pngBuffer = await renderProLudoAnimated(game, {
-      turnPlayer: game.players?.[game.turn],
-      dice: game.dice ?? null
-    });
+    const pngBuffer = await renderBoardFromImage(game);
 
     fs.writeFileSync(file, pngBuffer);
 
     await sock.sendMessage(from, {
       image: fs.readFileSync(file),
-      caption: "🎲 Ludo King • Professional Board"
+      caption: "🎲 Ludo King Board"
     });
 
   } catch (e) {
-    console.error("Ludo board error:", e);
-    await sock.sendMessage(from, { text: "❌ Board render failed." });
+    console.error(e);
   }
 
-  // cleanup
   try { fs.unlinkSync(file); } catch {}
-        }
+    }
 // End game
 if (command === ".ludo" && args[0] === "end") {
   if (!LUDO[from]) return sock.sendMessage(from, { text: "❌ No game." });
