@@ -323,88 +323,112 @@ if (command === ".wc" && args[0] === "end") {
     text:`Accepted: ${w}\nNext: ${w.slice(-1)}`
   });
                      }
-        if (command === ".ludo" && (args[0] === "start" || args[0] === "begin")) {
+        
+    // ===== LUDO COMMANDS =====
+
+// Start / Begin
+if (command === ".ludo" && (args[0] === "start" || args[0] === "begin")) {
   LUDO[from] = {
-    players:[sender],
-    turn:0,
-    tokens: { [sender]: [-1,-1,-1,-1] },
-    captured:{ [sender]:false }
+    players: [sender],
+    turn: 0,
+    tokens: { [sender]: [-1, -1, -1, -1] }, // ALL IN HOME
+    captured: { [sender]: false },
+    dice: null
   };
 
-  return sock.sendMessage(from,{text:"🎲 Ludo started!"});
-            }
-        if (command === ".ludo" && args[0] === "join") {
-  const g = LUDO[from];
-  if(!g) return;
+  return sock.sendMessage(from, { text: "🎲 Ludo started!" });
+}
 
-  if(!g.players.includes(sender)){
+// Join
+if (command === ".ludo" && args[0] === "join") {
+  const g = LUDO[from];
+  if (!g) return;
+
+  if (!g.players.includes(sender)) {
     g.players.push(sender);
-    g.tokens[sender] = [-1,-1,-1,-1];
-    g.captured[sender]=false;
+    g.tokens[sender] = [-1, -1, -1, -1]; // HOME
+    g.captured[sender] = false;
   }
 
-  return sock.sendMessage(from,{text:"Joined Ludo."});
-            }
-        if (command === ".ludo" && (args[0] === "roll" || args[0] === "dice")) {
+  return sock.sendMessage(from, { text: "Joined Ludo." });
+}
+
+// Roll Dice
+if (command === ".ludo" && (args[0] === "roll" || args[0] === "dice")) {
   const g = LUDO[from];
-  if(!g) return;
+  if (!g) return;
 
   const current = g.players[g.turn];
-  if(sender !== current) return;
+  if (sender !== current) return;
 
-  const dice = Math.floor(Math.random()*6)+1;
+  const dice = Math.floor(Math.random() * 6) + 1;
   g.dice = dice;
 
-  return sock.sendMessage(from,{text:`🎲 ${dice}`});
-        }
-        
-        if (command === ".ludo" && args[0] === "move") {
-  const g = LUDO[from];
-  if(!g) return;
+  return sock.sendMessage(from, { text: `🎲 ${dice}` });
+}
 
-  const i = parseInt(args[1])-1;
+// Move Token
+if (command === ".ludo" && args[0] === "move") {
+  const g = LUDO[from];
+  if (!g) return;
+
+  const i = parseInt(args[1]) - 1;
   const dice = g.dice;
-  if(isNaN(i) || !dice) return;
+  if (isNaN(i) || !dice) return;
 
   let pos = g.tokens[sender][i];
 
-  if(pos===0 && dice!==6)
-    return sock.sendMessage(from,{text:"Need 6 to enter."});
+  // 🏠 OPEN FROM HOME ONLY ON 6
+  if (pos === -1) {
+    if (dice !== 6)
+      return sock.sendMessage(from, { text: "Need 6 to open token." });
 
-  pos = pos===0 ? 1 : pos + dice;
-
-  if(pos>=WIN_POS){
-    if(!g.captured[sender])
-      return sock.sendMessage(from,{text:"Must capture first."});
-    pos = WIN_POS;
+    pos = 0; // ENTER BOARD
+  } else {
+    pos += dice;
   }
 
-  for(const p of g.players){
-    if(p===sender) continue;
-    g.tokens[p].forEach((ep,j)=>{
-      if(ep===pos && !SAFE_CELLS.includes(pos)){
-        g.tokens[p][j]=0;
-        g.captured[sender]=true;
-      }
+  // 🏁 LIMIT (finish at 57)
+  if (pos > 57) return sock.sendMessage(from, { text: "Cannot move." });
+
+  // ⚔️ CAPTURE CHECK (main track only)
+  if (pos <= 51) {
+    for (const p of g.players) {
+      if (p === sender) continue;
+
+      g.tokens[p].forEach((ep, j) => {
+        if (ep === pos) {
+          g.tokens[p][j] = -1; // send home
+          g.captured[sender] = true;
+        }
+      });
+    }
+  }
+
+  g.tokens[sender][i] = pos;
+
+  // 🏆 WIN CHECK
+  if (g.tokens[sender].every(t => t === 57)) {
+    delete LUDO[from];
+    return sock.sendMessage(from, {
+      text: `🏆 ${sender.split("@")[0]} wins!`
     });
   }
 
-  g.tokens[sender][i]=pos;
-
-  if(g.tokens[sender].every(t=>t===WIN_POS)){
-    delete LUDO[from];
-    return sock.sendMessage(from,{text:`🏆 ${sender.split("@")[0]} wins!`});
+  // 🔁 NEXT TURN
+  if (dice !== 6) {
+    g.turn = (g.turn + 1) % g.players.length;
   }
 
-  if(dice!==6) nextTurn(g);
-  g.dice=null;
+  g.dice = null;
 
-  return sock.sendMessage(from,{text:"Move done."});
-                          }
-        
+  return sock.sendMessage(from, { text: "Move done." });
+}
+
+
 // ===== LUDO EXTRA COMMANDS =====
 
-// Show status
+// Status
 if (command === ".ludo" && args[0] === "status") {
   const game = LUDO[from];
   if (!game) return sock.sendMessage(from, { text: "❌ No game." });
@@ -421,6 +445,9 @@ if (command === ".ludo" && args[0] === "status") {
     mentions: game.players
   });
 }
+
+
+// 🖼️ BOARD (IMAGE RENDER)
 if (command === ".ludo" && args[0] === "board") {
   const game = LUDO[from];
   if (!game) return;
@@ -442,15 +469,17 @@ if (command === ".ludo" && args[0] === "board") {
   }
 
   try { fs.unlinkSync(file); } catch {}
-    }
-// End game
+}
+
+
+// End Game
 if (command === ".ludo" && args[0] === "end") {
   if (!LUDO[from]) return sock.sendMessage(from, { text: "❌ No game." });
 
   delete LUDO[from];
 
   return sock.sendMessage(from, { text: "🏁 Ludo game ended." });
-}
+        }
 
 
         if (command === ".help") {
