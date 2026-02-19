@@ -422,7 +422,9 @@ if (command === ".ludo" && args[0] === "status") {
 }
 if (command === ".ludo" && args[0] === "board") {
   const game = LUDO[from];
-  if (!game) return sock.sendMessage(from, { text: "❌ No ludo game." });
+  if (!game) return;
+
+  const file = path.join(os.tmpdir(), "ludo.png");
 
   try {
     const pngBuffer = await renderLudoBoardUltra(game, {
@@ -430,17 +432,21 @@ if (command === ".ludo" && args[0] === "board") {
       dice: game.dice ?? null
     });
 
+    fs.writeFileSync(file, pngBuffer);
+
     await sock.sendMessage(from, {
-      image: pngBuffer,
+      image: fs.readFileSync(file),
       caption: "🎲 Ludo King Board (Ultra)"
     });
 
   } catch (e) {
-    console.error("Ludo ultra board render failed:", e);
-    await sock.sendMessage(from, {
-      text: "❌ Board render failed: " + (e.message || e)
-    });
+    console.error("Ludo board error:", e);
+    await sock.sendMessage(from, { text: "❌ Board render failed." });
   }
+
+  // cleanup (same as your old code)
+  try { fs.unlinkSync(file); } catch {}
+}
             
 
 // End game
