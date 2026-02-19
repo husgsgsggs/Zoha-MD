@@ -326,7 +326,7 @@ if (command === ".wc" && args[0] === "end") {
   LUDO[from] = {
     players:[sender],
     turn:0,
-    tokens:{ [sender]:[0,0,0,0] },
+    tokens: { [sender]: [-1,-1,-1,-1] },
     captured:{ [sender]:false }
   };
 
@@ -338,7 +338,7 @@ if (command === ".wc" && args[0] === "end") {
 
   if(!g.players.includes(sender)){
     g.players.push(sender);
-    g.tokens[sender]=[0,0,0,0];
+    g.tokens[sender] = [-1,-1,-1,-1];
     g.captured[sender]=false;
   }
 
