@@ -1,115 +1,34 @@
 const Jimp = require("jimp");
 
-// Professional animated Ludo board renderer (GIF-like via frames → buffer)
+async function renderBoardFromImage(game) {
+  const board = await Jimp.read("./assets/ludo_board.png");
 
-const GRID = 15;
-const CELL = 40;
-const PAD = 20;
-const SIZE = GRID * CELL + PAD * 2;
+  const tokenSize = 28;
 
-const COLORS = {
-  red: 0xff3b30ff,
-  blue: 0x007affff,
-  green: 0x34c759ff,
-  yellow: 0xffcc00ff,
-  white: 0xffffffff,
-  black: 0x000000ff,
-  bg: 0xffffffff
-};
+  // Example coordinate map (EDIT later for perfect alignment)
+  const PATH = [
+    [50, 50], [90, 50], [130, 50], [170, 50], [210, 50],
+    [250, 50], [290, 50], [330, 50], [370, 50]
+  ];
 
-const PLAYER_COLORS = [
-  COLORS.red,
-  COLORS.blue,
-  COLORS.green,
-  COLORS.yellow
-];
+  for (const [player, tokens] of Object.entries(game.tokens)) {
+    const color =
+      player === game.players[0] ? 0xff0000ff :
+      player === game.players[1] ? 0x0000ffff :
+      player === game.players[2] ? 0x00ff00ff :
+      0xffff00ff;
 
-// Fixed professional home slots (centered)
-const HOME_SPOTS = [
-  [[2,10],[4,10],[2,12],[4,12]], // red
-  [[2,2],[4,2],[2,4],[4,4]],     // blue
-  [[10,2],[12,2],[10,4],[12,4]], // green
-  [[10,10],[12,10],[10,12],[12,12]] // yellow
-];
+    for (const pos of tokens) {
+      if (pos < 0 || pos >= PATH.length) continue;
 
-function cellToPx(cx, cy) {
-  return [PAD + cx * CELL, PAD + cy * CELL];
-}
+      const [x, y] = PATH[pos];
 
-// Professional token (3D style)
-async function drawToken(img, cx, cy, color) {
-  const size = 28;
-  const r = 12;
+      const token = new Jimp(tokenSize, tokenSize, color);
+      token.circle();
 
-  const [x0, y0] = cellToPx(cx, cy);
-
-  const token = new Jimp(size, size, 0x00000000);
-
-  // shadow
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const dx = x - size/2 + 2;
-      const dy = y - size/2 + 2;
-      if (dx*dx + dy*dy <= r*r) token.setPixelColor(0x00000055, x, y);
+      board.composite(token, x, y);
     }
   }
 
-  // body
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const dx = x - size/2;
-      const dy = y - size/2;
-      if (dx*dx + dy*dy <= r*r) token.setPixelColor(color, x, y);
-    }
-  }
-
-  // white border
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const dx = x - size/2;
-      const dy = y - size/2;
-      const d = dx*dx + dy*dy;
-      if (d <= r*r && d >= (r-2)*(r-2)) token.setPixelColor(0xffffffff, x, y);
-    }
-  }
-
-  img.composite(token, x0 + 6, y0 + 6);
+  return board.getBufferAsync(Jimp.MIME_PNG);
 }
-
-// Draw professional board
-async function drawBoard(game) {
-  const img = new Jimp(SIZE, SIZE, COLORS.bg);
-
-  // colored bases
-  img.composite(new Jimp(CELL*6, CELL*6, COLORS.blue), PAD, PAD);
-  img.composite(new Jimp(CELL*6, CELL*6, COLORS.green), PAD + CELL*9, PAD);
-  img.composite(new Jimp(CELL*6, CELL*6, COLORS.red), PAD, PAD + CELL*9);
-  img.composite(new Jimp(CELL*6, CELL*6, COLORS.yellow), PAD + CELL*9, PAD + CELL*9);
-
-  const players = game.players || [];
-  const tokens = game.tokens || {};
-
-  for (let i = 0; i < players.length; i++) {
-    const jid = players[i];
-    const t = tokens[jid] || [];
-    const spots = HOME_SPOTS[i];
-
-    for (let k = 0; k < t.length; k++) {
-      if (t[k] === 0) {
-        const [cx, cy] = spots[k];
-        await drawToken(img, cx, cy, PLAYER_COLORS[i]);
-      }
-    }
-  }
-
-  return img;
-}
-
-// MAIN EXPORT
-async function renderProLudoAnimated(game) {
-  // For WhatsApp we just send a high-quality static frame (safe)
-  const img = await drawBoard(game);
-  return await img.getBufferAsync(Jimp.MIME_PNG);
-}
-
-module.exports = { renderProLudoAnimated };
