@@ -16,6 +16,7 @@ const yts = require("yt-search");
 const { exec, execFile } = require("child_process");
 const PImage = require("pureimage");
 const path = require("path");
+const { renderLudoBoardUltra } = require("./ludo_renderer_ultra");
 const os = require("os");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 process.on("uncaughtException", err => {
@@ -399,30 +400,7 @@ if (command === ".wc" && args[0] === "end") {
 
   return sock.sendMessage(from,{text:"Move done."});
                           }
-        if (command === ".ludo" && args[0] === "board") {
-  const game = LUDO[from];
-  if (!game) return;
-
-  const file = path.join(os.tmpdir(), "ludo.png");
-
-  const img = new Jimp(400,400,0xffffffff);
-  const font = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
-
-  Object.entries(game.tokens).forEach(([p, toks], i) => {
-    const name = p.split("@")[0];
-    img.print(font, 10, 10 + i*40, `${i+1}. ${name}`);
-    img.print(font, 30, 28 + i*40, `Tokens: ${toks.join(", ")}`);
-  });
-
-  await img.writeAsync(file);
-
-  // Send image
-  await sock.sendMessage(from, { image: fs.readFileSync(file) });
-
-  // 👇 ADD THIS LINE RIGHT HERE
-  try { fs.unlinkSync(file); } catch {}
-}
-
+        
 // ===== LUDO EXTRA COMMANDS =====
 
 // Show status
@@ -442,7 +420,28 @@ if (command === ".ludo" && args[0] === "status") {
     mentions: game.players
   });
 }
+if (command === ".ludo" && args[0] === "board") {
+  const game = LUDO[from];
+  if (!game) return sock.sendMessage(from, { text: "❌ No ludo game." });
 
+  try {
+    const pngBuffer = await renderLudoBoardUltra(game, {
+      turnPlayer: game.players?.[game.turn],
+      dice: game.dice ?? null
+    });
+
+    await sock.sendMessage(from, {
+      image: pngBuffer,
+      caption: "🎲 Ludo King Board (Ultra)"
+    });
+
+  } catch (e) {
+    console.error("Ludo ultra board render failed:", e);
+    await sock.sendMessage(from, {
+      text: "❌ Board render failed: " + (e.message || e)
+    });
+  }
+            
 
 // End game
 if (command === ".ludo" && args[0] === "end") {
