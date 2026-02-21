@@ -632,8 +632,8 @@ setTimeout(() => {
       });
 
   }).catch(e =>
-    sock.sendMessage(from, { text: e.message })
-  );
+    sock.sendMessage(from, { text: e.message });
+        });
         }
         if (command === ".song") {
   const q = args.join(" ");
