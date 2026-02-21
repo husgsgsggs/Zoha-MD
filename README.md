@@ -160,8 +160,8 @@ PureImage
 
 Clone Repository
 
-git clone https://github.com/yourusername/zoha-power-bot.git
-cd zoha-power-bot
+git clone https://github.com/yourusername/Zoha-MD.git
+cd Zoha-MD
 
 
 ---
