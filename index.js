@@ -627,9 +627,10 @@ if (command === ".ludo" && args[0] === "end") {
         text: "Download failed: " + (err.message || err)
       });
 
-    } finally {
-      try { fs.unlinkSync(file); } catch {}
-    }
+    // ✅ Wait a bit, then delete after 10 minutes
+setTimeout(() => {
+  try { fs.unlinkSync(file); } catch {}
+}, 10 * 60 * 1000);
 
   }).catch(e =>
     sock.sendMessage(from, { text: e.message })
