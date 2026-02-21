@@ -151,6 +151,25 @@ async function startBot() {
   }
                   }
     });
+    async function safeSend(jid, content) {
+  try {
+    return await sock.sendMessage(jid, content);
+  } catch (e) {
+
+    // Retry for groups
+    if (jid.endsWith("@g.us")) {
+      try {
+        await sock.groupMetadata(jid);
+        return await sock.sendMessage(jid, content);
+      } catch (e2) {
+        console.error("Group retry failed:", e2);
+      }
+    }
+
+    console.error("Send failed:", e);
+    return null; // IMPORTANT
+  }
+        }
 
     sock.ev.on('creds.update', saveCreds);
 
@@ -181,6 +200,10 @@ async function startBot() {
   if (!msg.message) return;
 
   const from = msg.key.remoteJid;
+      // ⭐ ADD THIS BLOCK HERE
+  if (from.endsWith("@g.us")) {
+  await sock.groupMetadata(from);
+}
   const isGroup = from.endsWith("@g.us");
 
   // ✅ Identify sender correctly (works in groups + private)
@@ -207,12 +230,12 @@ async function startBot() {
         const isFromMe = msg.key.fromMe === true;
 
 if (!isFromMe && SETTINGS.autoReact && body) {
-  await sock.sendMessage(from, {
+  await safeSend(from, {
     react: { text: SETTINGS.emoji, key: msg.key }
   });
 }
         if (command === ".alive") {
-  return sock.sendMessage(from,{
+  return safeSend(from,{
     text:`👑 Zoha Power Bot ONLINE
 ⏱ Uptime: ${Math.floor(process.uptime())} sec`
   });
@@ -224,15 +247,15 @@ if (!isFromMe && SETTINGS.autoReact && body) {
   else if (sub === "off") SETTINGS.autoReact = false;
   else if (sub === "emoji") SETTINGS.emoji = args[1] || "🔥";
 
-  return sock.sendMessage(from, {
+  return safeSend(from, {
     text: `✅ AutoReact: ${SETTINGS.autoReact ? "ON" : "OFF"}\n😀 Emoji: ${SETTINGS.emoji}\n\nUse:\n.react on\n.react off\n.react emoji 😎`
   });
 }
 
         if (command === ".ping") {
   const start = Date.now();
-  await sock.sendMessage(from,{text:"🏓 Testing..."});
-  return sock.sendMessage(from,{
+  await safeSend(from,{text:"🏓 Testing..."});
+  return safeSend(from,{
     text:`🏓 ${Date.now()-start} ms`
   });
 }
@@ -246,7 +269,7 @@ if (!isFromMe && SETTINGS.autoReact && body) {
     used:[]
   };
 
-  return sock.sendMessage(from,{text:"🎯 Word Chain started!"});
+  return safeSend(from,{text:"🎯 Word Chain started!"});
         }
         
         // ===== WORD CHAIN EXTRA COMMANDS =====
@@ -254,15 +277,15 @@ if (!isFromMe && SETTINGS.autoReact && body) {
 // Begin game
 if (command === ".wc" && args[0] === "begin") {
   const game = WORDCHAIN[from];
-  if (!game) return sock.sendMessage(from, { text: "❌ No game." });
+  if (!game) return safeSend(from, { text: "❌ No game." });
   if (game.players.length < 2)
-    return sock.sendMessage(from, { text: "Need at least 2 players." });
+    return safeSend(from, { text: "Need at least 2 players." });
 
   game.started = true;
   game.turn = 0;
   
 
-  return sock.sendMessage(from, {
+  return safeSend(from, {
     text: `🎯 Word Chain started!\nFirst turn: @${game.players[0].split('@')[0]}`,
     mentions: game.players
   });
@@ -272,9 +295,9 @@ if (command === ".wc" && args[0] === "begin") {
 // Show status
 if (command === ".wc" && args[0] === "status") {
   const game = WORDCHAIN[from];
-  if (!game) return sock.sendMessage(from, { text: "❌ No game." });
+  if (!game) return safeSend(from, { text: "❌ No game." });
 
-  return sock.sendMessage(from, {
+  return safeSend(from, {
     text:
       `🎯 Word Chain Status\n` +
       `Players: ${game.players.length}\n` +
@@ -287,11 +310,11 @@ if (command === ".wc" && args[0] === "status") {
 
 // End game
 if (command === ".wc" && args[0] === "end") {
-  if (!WORDCHAIN[from]) return sock.sendMessage(from, { text: "❌ No game." });
+  if (!WORDCHAIN[from]) return safeSend(from, { text: "❌ No game." });
 
   delete WORDCHAIN[from];
 
-  return sock.sendMessage(from, { text: "🏁 Word Chain game ended." });
+  return safeSend(from, { text: "🏁 Word Chain game ended." });
 }
 
         if (command === ".wc" && args[0] === "join") {
