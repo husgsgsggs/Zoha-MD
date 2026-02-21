@@ -144,7 +144,12 @@ async function startBot() {
         logger: pino({ level: "silent" }),
         browser: ["Zoha-Bot", "Chrome", "1.0.0"],
         defaultQueryTimeoutMs: 0,
-        getMessage: async () => ({ key: {}, message: { conversation: "" } })
+        syncFullHistory: true,
+        getMessage: async (key) => {
+  return {
+    conversation: "Zoha Power Bot"
+  }
+                  }
     });
 
     sock.ev.on('creds.update', saveCreds);
