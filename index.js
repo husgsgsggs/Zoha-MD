@@ -620,17 +620,16 @@ if (command === ".ludo" && args[0] === "end") {
         video: buff,
         caption: "🎥 Video downloaded"
       });
+        // ✅ Wait a bit, then delete after 10 minutes
+setTimeout(() => {
+  try { fs.unlinkSync(file); } catch {}
+}, 10 * 60 * 1000);
 
     } catch (err) {
       console.error(err);
       await sock.sendMessage(from, {
         text: "Download failed: " + (err.message || err)
       });
-
-    // ✅ Wait a bit, then delete after 10 minutes
-setTimeout(() => {
-  try { fs.unlinkSync(file); } catch {}
-}, 10 * 60 * 1000);
 
   }).catch(e =>
     sock.sendMessage(from, { text: e.message })
