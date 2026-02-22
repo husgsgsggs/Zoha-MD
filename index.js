@@ -137,7 +137,7 @@ async function startBot() {
 
     const store = makeInMemoryStore({})
 
-    store.bind(sock.ev)
+    
     const sock = makeWASocket({
         version,
         auth: {
@@ -150,6 +150,7 @@ async function startBot() {
         defaultQueryTimeoutMs: 0,
         getMessage: async () => ({ key: {}, message: { conversation: "" } })
     });
+    store.bind(sock.ev)
    
 
     sock.ev.on('creds.update', saveCreds);
