@@ -133,7 +133,11 @@ function downloadWithYtDlp(url, outFile, argsArr) {
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('session');
     const { version } = await fetchLatestBaileysVersion();
+    const { makeInMemoryStore } = require("@whiskeysockets/baileys")
 
+    const store = makeInMemoryStore({})
+
+    store.bind(sock.ev)
     const sock = makeWASocket({
         version,
         auth: {
@@ -190,36 +194,41 @@ async function startBot() {
   }
 }
 
-    sock.ev.on("messages.upsert", async ({ messages }) => {
+    
 
+  sock.ev.on("messages.upsert", async ({ messages, type }) => {
   try {
-  const msg = messages[0];
-  if (!msg.message) return;
+    const msg = messages[0]
+    if (!msg.message) return
+    if (msg.key.fromMe) return
 
-  const from = msg.key.remoteJid;
-  if (from.endsWith("@g.us")) {
-  await sock.groupMetadata(from);
-}
-  const isGroup = from.endsWith("@g.us");
+    const from = msg.key.remoteJid
 
-  // ✅ Identify sender correctly (works in groups + private)
-  const sender = (isGroup ? (msg.key.participant || msg.participant) : from) || from;
+    // Ignore status
+    if (from === "status@broadcast") return
 
-  const body =
-    msg.message.conversation ||
-    msg.message.extendedTextMessage?.text ||
-    msg.message.imageMessage?.caption ||
-    msg.message.videoMessage?.caption ||
-    "";
+    // ⭐ Load group metadata (important)
+    if (from.endsWith("@g.us")) {
+      try { await sock.groupMetadata(from) } catch {}
+    }
 
-  if (!body) return;
+    // Get text safely
+    const body =
+      msg.message.conversation ||
+      msg.message.extendedTextMessage?.text ||
+      msg.message.imageMessage?.caption ||
+      msg.message.videoMessage?.caption ||
+      ""
 
-  const args = body.trim().split(/\s+/);
-  const command = args.shift()?.toLowerCase();
+    if (!body) return
 
-  console.log("FROM:", from, "ISGROUP:", isGroup, "BODY:", body);
+    // ⭐ COMMAND PARSER
+    const args = body.trim().split(" ")
+    const command = args.shift().toLowerCase()
 
-  
+    console.log("FROM:", from, "BODY:", body)
+
+    
   // ✅ your commands below...
 
 // 🔥 Auto reaction
