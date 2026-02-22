@@ -605,18 +605,21 @@ if (command === ".ludo" && args[0] === "end") {
 
     try {
       await downloadWithYtDlp(url, file, [
-        "-f", "bv*[height<=720]+ba/b[height<=720]",
-        "--merge-output-format", "mp4",
-        "--max-filesize", "50M"
-      ]);
+  "-f", "bv*[height<=720]+ba/b[height<=720]",
+  "--merge-output-format", "mp4"
+]);
 
-      const buff = fs.readFileSync(file);
+const size = fs.statSync(file).size;
+if (size < 50000) throw new Error("Video corrupted");
 
-      await sock.sendMessage(from, {
-        video: buff,
-        caption: "🎥 Video downloaded"
-      });
-      setTimeout(() => {
+await sock.sendMessage(from, {
+  video: { url: file },   // ⭐ MUST BE THIS
+  mimetype: "video/mp4",
+  caption: "🎥 Video downloaded"
+});
+
+// delete later
+setTimeout(() => {
   try { fs.unlinkSync(file); } catch {}
 }, 10 * 60 * 1000);
 
